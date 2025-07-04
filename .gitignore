@@ -1,6 +1,13 @@
+# Ignorer les fichiers Python compilés
 __pycache__
 *.pyc
 *.pyo
 *.pyd
+
+# Ignorer l'environnement virtuel
 venv/
-data.dvc
+
+# Ignorer le fichier de données DVC (mais pas le fichier .dvc)
+# Ne plus ignorer le fichier .dvc
+data/
+LungCancer.csv
