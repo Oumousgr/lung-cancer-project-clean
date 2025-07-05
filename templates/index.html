@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prédiction Cancer du Poumon</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        form { margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
+        input, select { margin: 10px 0; padding: 10px; width: 100%; }
+        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+
+<h1>Formulaire de Prédiction Cancer du Poumon</h1>
+
+<form id="prediction-form">
+    <label for="age">Âge:</label>
+    <input type="number" id="age" name="age" required><br>
+
+    <label for="gender">Sexe:</label>
+    <select id="gender" name="gender" required>
+        <option value="male">Homme</option>
+        <option value="female">Femme</option>
+    </select><br>
+
+    <label for="smoking_status">Statut tabagique:</label>
+    <select id="smoking_status" name="smoking_status" required>
+        <option value="never smoked">Jamais fumé</option>
+        <option value="former smoker">Ancien fumeur</option>
+        <option value="current smoker">Fumeur actuel</option>
+    </select><br>
+
+    <label for="bmi">IMC:</label>
+    <input type="number" id="bmi" name="bmi" required><br>
+
+    <label for="cholesterol_level">Niveau de cholestérol:</label>
+    <input type="number" id="cholesterol_level" name="cholesterol_level" required><br>
+
+    <label for="hypertension">Hypertension:</label>
+    <select id="hypertension" name="hypertension" required>
+        <option value="yes">Oui</option>
+        <option value="no">Non</option>
+    </select><br>
+
+    <label for="country">Pays:</label>
+    <input type="text" id="country" name="country" required><br>
+
+    <label for="diagnosis_date">Date de diagnostic:</label>
+    <input type="date" id="diagnosis_date" name="diagnosis_date" required><br>
+
+    <label for="end_treatment_date">Date de fin de traitement:</label>
+    <input type="date" id="end_treatment_date" name="end_treatment_date" required><br>
+
+    <label for="cancer_stage">Stade du cancer:</label>
+    <select id="cancer_stage" name="cancer_stage" required>
+        <option value="Stage I">Stade I</option>
+        <option value="Stage II">Stade II</option>
+        <option value="Stage III">Stade III</option>
+        <option value="Stage IV">Stade IV</option>
+    </select><br>
+
+    <label for="family_history">Antécédents familiaux:</label>
+    <select id="family_history" name="family_history" required>
+        <option value="yes">Oui</option>
+        <option value="no">Non</option>
+    </select><br>
+
+    <label for="asthma">Asthme:</label>
+    <select id="asthma" name="asthma" required>
+        <option value="yes">Oui</option>
+        <option value="no">Non</option>
+    </select><br>
+
+    <label for="cirrhosis">Cirrhose:</label>
+    <select id="cirrhosis" name="cirrhosis" required>
+        <option value="yes">Oui</option>
+        <option value="no">Non</option>
+    </select><br>
+
+    <label for="other_cancer">Autre cancer:</label>
+    <select id="other_cancer" name="other_cancer" required>
+        <option value="yes">Oui</option>
+        <option value="no">Non</option>
+    </select><br>
+
+    <label for="treatment_type">Type de traitement:</label>
+    <select id="treatment_type" name="treatment_type" required>
+        <option value="Surgery">Chirurgie</option>
+        <option value="Chemotherapy">Chimiothérapie</option>
+        <option value="Radiotherapy">Radiothérapie</option>
+        <option value="Combined">Combiné</option>
+    </select><br>
+
+    <button type="submit">Soumettre</button>
+</form>
+
+<h2>Prédiction:</h2>
+<p id="prediction-result">Résultat de la prédiction s'affichera ici.</p>
+
+<script>
+    // Soumettre le formulaire pour faire une prédiction
+    document.getElementById('prediction-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Récupérer les données du formulaire
+        const formData = new FormData(e.target);
+        const data = {};
+        formData.forEach((value, key) => {
+            data[key] = value;
+        });
+
+        // Envoi de la requête POST à l'API
+        fetch('http://127.0.0.1:5001/predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            // Afficher la prédiction
+            document.getElementById('prediction-result').textContent = `Prédiction : ${result.prediction}`;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            document.getElementById('prediction-result').textContent = "Erreur lors de la prédiction.";
+        });
+    });
+</script>
+
+</body>
+</html>

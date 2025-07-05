@@ -5,3 +5,6 @@ scikit-learn
 matplotlib
 kaggle
 docker
+kagglehub 
+dvc
+mlflow
