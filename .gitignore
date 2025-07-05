@@ -11,3 +11,4 @@ venv/
 # Ne plus ignorer le fichier .dvc
 data/
 LungCancer.csv
+/data
