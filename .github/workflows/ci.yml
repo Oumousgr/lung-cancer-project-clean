@@ -1,15 +1,11 @@
-name: CI for Lung Cancer Project
+name: CI Lung Cancer Project
 
 on:
   push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
-  build-test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,16 +19,24 @@ jobs:
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
+        python -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pytest flake8
+        pip install dvc dvc-gdrive mlflow
 
     - name: Lint with flake8
       run: |
+        source venv/bin/activate
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Run tests
       run: |
+        source venv/bin/activate
         pytest
 
+    - name: DVC pull
+      run: |
+        source venv/bin/activate
+        echo "${{ secrets.GDRIVE_CREDENTIALS_DATA }}" | base64 --decode > credentials.json
+        dvc pull
