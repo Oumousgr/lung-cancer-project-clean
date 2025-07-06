@@ -9,6 +9,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 import joblib
 from datetime import datetime
+import mlflow
+import mlflow.sklearn
+
 
 
 app = Flask(__name__)
@@ -70,6 +73,11 @@ def load_and_prepare_data():
 def train_model(X_train, y_train):
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
+
+    with mlflow.start_run():
+        mlflow.sklearn.log_model(model, "model")
+        mlflow.log_params({"n_estimators": 100, "random_state": 42})
+
     return model
 
 def train_model(X_train, y_train):
