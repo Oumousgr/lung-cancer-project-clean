@@ -12,3 +12,4 @@ venv/
 data/
 LungCancer.csv
 /data
+credentials.json
