@@ -5,105 +5,524 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prédiction Cancer du Poumon</title>
     <style>
-        body { font-family: Arial, sans-serif; }
-        form { margin: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
-        input, select { margin: 10px 0; padding: 10px; width: 100%; }
-        button { padding: 10px 20px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #45a049; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            position: relative;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .form-group:nth-child(odd) {
+            animation-delay: 0.1s;
+        }
+
+        .form-group:nth-child(even) {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-group input:hover,
+        .form-group select:hover {
+            border-color: #4facfe;
+        }
+
+        .submit-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px 50px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .result-container {
+            margin-top: 40px;
+            padding: 30px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .result-container.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-container h2 {
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .result-text {
+            color: white;
+            font-size: 1.3em;
+            font-weight: 500;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 2px;
+            margin-bottom: 20px;
+            transform: scaleX(0);
+            transform-origin: left;
+            animation: progressFill 2s ease-out;
+        }
+
+        @keyframes progressFill {
+            to { transform: scaleX(1); }
+        }
+
+        .info-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background: #4facfe;
+            color: white;
+            border-radius: 50%;
+            font-size: 12px;
+            line-height: 16px;
+            text-align: center;
+            margin-left: 5px;
+            cursor: help;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8em;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+        }
     </style>
 </head>
 <body>
 
-<h1>Formulaire de Prédiction Cancer du Poumon</h1>
+<div class="container">
+    <div class="header">
+        <h1>🫁 Prédiction Cancer du Poumon</h1>
+        <p>Système d'aide au diagnostic médical</p>
+    </div>
 
-<form id="prediction-form">
-    <label for="age">Âge:</label>
-    <input type="number" id="age" name="age" required><br>
+    <div class="progress-bar"></div>
 
-    <label for="gender">Sexe:</label>
-    <select id="gender" name="gender" required>
-        <option value="male">Homme</option>
-        <option value="female">Femme</option>
-    </select><br>
+    <div class="form-container">
+        <form id="prediction-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="age">Âge <span class="tooltip"><span class="info-icon">?</span><span class="tooltiptext">Âge du patient en années</span></span></label>
+                    <input type="number" id="age" name="age" min="1" max="120" required>
+                </div>
 
-    <label for="smoking_status">Statut tabagique:</label>
-    <select id="smoking_status" name="smoking_status" required>
-        <option value="never smoked">Jamais fumé</option>
-        <option value="former smoker">Ancien fumeur</option>
-        <option value="current smoker">Fumeur actuel</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="gender">Sexe</label>
+                    <select id="gender" name="gender" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="male">👨 Homme</option>
+                        <option value="female">👩 Femme</option>
+                    </select>
+                </div>
 
-    <label for="bmi">IMC:</label>
-    <input type="number" id="bmi" name="bmi" required><br>
+                <div class="form-group">
+                    <label for="smoking_status">Statut tabagique <span class="tooltip"><span class="info-icon">?</span><span class="tooltiptext">Historique de consommation de tabac</span></span></label>
+                    <select id="smoking_status" name="smoking_status" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="never smoked">🚭 Jamais fumé</option>
+                        <option value="former smoker">🚬 Ancien fumeur</option>
+                        <option value="current smoker">🚬 Fumeur actuel</option>
+                    </select>
+                </div>
 
-    <label for="cholesterol_level">Niveau de cholestérol:</label>
-    <input type="number" id="cholesterol_level" name="cholesterol_level" required><br>
+                <div class="form-group">
+                    <label for="bmi">IMC (Indice de Masse Corporelle) <span class="tooltip"><span class="info-icon">?</span><span class="tooltiptext">Poids (kg) / Taille² (m²)</span></span></label>
+                    <input type="number" id="bmi" name="bmi" step="0.1" min="10" max="50" required>
+                </div>
 
-    <label for="hypertension">Hypertension:</label>
-    <select id="hypertension" name="hypertension" required>
-        <option value="yes">Oui</option>
-        <option value="no">Non</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="cholesterol_level">Niveau de cholestérol (mg/dL)</label>
+                    <input type="number" id="cholesterol_level" name="cholesterol_level" min="100" max="400" required>
+                </div>
 
-    <label for="country">Pays:</label>
-    <input type="text" id="country" name="country" required><br>
+                <div class="form-group">
+                    <label for="hypertension">Hypertension</label>
+                    <select id="hypertension" name="hypertension" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="yes">✅ Oui</option>
+                        <option value="no">❌ Non</option>
+                    </select>
+                </div>
 
-    <label for="diagnosis_date">Date de diagnostic:</label>
-    <input type="date" id="diagnosis_date" name="diagnosis_date" required><br>
+                <div class="form-group">
+                    <label for="country">Pays</label>
+                    <input type="text" id="country" name="country" placeholder="Ex: France" required>
+                </div>
 
-    <label for="end_treatment_date">Date de fin de traitement:</label>
-    <input type="date" id="end_treatment_date" name="end_treatment_date" required><br>
+                <div class="form-group">
+                    <label for="diagnosis_date">Date de diagnostic</label>
+                    <input type="date" id="diagnosis_date" name="diagnosis_date" required>
+                </div>
 
-    <label for="cancer_stage">Stade du cancer:</label>
-    <select id="cancer_stage" name="cancer_stage" required>
-        <option value="Stage I">Stade I</option>
-        <option value="Stage II">Stade II</option>
-        <option value="Stage III">Stade III</option>
-        <option value="Stage IV">Stade IV</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="end_treatment_date">Date de fin de traitement</label>
+                    <input type="date" id="end_treatment_date" name="end_treatment_date" required>
+                </div>
 
-    <label for="family_history">Antécédents familiaux:</label>
-    <select id="family_history" name="family_history" required>
-        <option value="yes">Oui</option>
-        <option value="no">Non</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="cancer_stage">Stade du cancer</label>
+                    <select id="cancer_stage" name="cancer_stage" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="Stage I">🟢 Stade I (Localisé)</option>
+                        <option value="Stage II">🟡 Stade II (Localement avancé)</option>
+                        <option value="Stage III">🟠 Stade III (Régionalement avancé)</option>
+                        <option value="Stage IV">🔴 Stade IV (Métastatique)</option>
+                    </select>
+                </div>
 
-    <label for="asthma">Asthme:</label>
-    <select id="asthma" name="asthma" required>
-        <option value="yes">Oui</option>
-        <option value="no">Non</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="family_history">Antécédents familiaux <span class="tooltip"><span class="info-icon">?</span><span class="tooltiptext">Histoire familiale de cancer</span></span></label>
+                    <select id="family_history" name="family_history" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="yes">✅ Oui</option>
+                        <option value="no">❌ Non</option>
+                    </select>
+                </div>
 
-    <label for="cirrhosis">Cirrhose:</label>
-    <select id="cirrhosis" name="cirrhosis" required>
-        <option value="yes">Oui</option>
-        <option value="no">Non</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="asthma">Asthme</label>
+                    <select id="asthma" name="asthma" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="yes">✅ Oui</option>
+                        <option value="no">❌ Non</option>
+                    </select>
+                </div>
 
-    <label for="other_cancer">Autre cancer:</label>
-    <select id="other_cancer" name="other_cancer" required>
-        <option value="yes">Oui</option>
-        <option value="no">Non</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="cirrhosis">Cirrhose</label>
+                    <select id="cirrhosis" name="cirrhosis" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="yes">✅ Oui</option>
+                        <option value="no">❌ Non</option>
+                    </select>
+                </div>
 
-    <label for="treatment_type">Type de traitement:</label>
-    <select id="treatment_type" name="treatment_type" required>
-        <option value="Surgery">Chirurgie</option>
-        <option value="Chemotherapy">Chimiothérapie</option>
-        <option value="Radiotherapy">Radiothérapie</option>
-        <option value="Combined">Combiné</option>
-    </select><br>
+                <div class="form-group">
+                    <label for="other_cancer">Autre cancer</label>
+                    <select id="other_cancer" name="other_cancer" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="yes">✅ Oui</option>
+                        <option value="no">❌ Non</option>
+                    </select>
+                </div>
 
-    <button type="submit">Soumettre</button>
-</form>
+                <div class="form-group">
+                    <label for="treatment_type">Type de traitement</label>
+                    <select id="treatment_type" name="treatment_type" required>
+                        <option value="">Sélectionnez...</option>
+                        <option value="Surgery">🔪 Chirurgie</option>
+                        <option value="Chemotherapy">💊 Chimiothérapie</option>
+                        <option value="Radiotherapy">⚡ Radiothérapie</option>
+                        <option value="Combined">🔄 Combiné</option>
+                    </select>
+                </div>
+            </div>
 
-<h2>Prédiction:</h2>
-<p id="prediction-result">Résultat de la prédiction s'affichera ici.</p>
+            <div class="submit-container">
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    <span class="btn-text">Analyser</span>
+                    <div class="loading-spinner"></div>
+                </button>
+            </div>
+        </form>
+
+        <div class="error-message" id="error-message"></div>
+
+        <div class="result-container" id="result-container">
+            <h2>📊 Résultat de l'analyse</h2>
+            <div class="result-text" id="prediction-result">
+                Résultat de la prédiction s'affichera ici.
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
-    // Soumettre le formulaire pour faire une prédiction
+    // Validation des dates
+    function validateDates() {
+        const diagnosisDate = document.getElementById('diagnosis_date').value;
+        const endTreatmentDate = document.getElementById('end_treatment_date').value;
+        
+        if (diagnosisDate && endTreatmentDate) {
+            if (new Date(diagnosisDate) >= new Date(endTreatmentDate)) {
+                showError('La date de fin de traitement doit être postérieure à la date de diagnostic.');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Fonction pour afficher les erreurs
+    function showError(message) {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+            errorDiv.style.display = 'none';
+        }, 5000);
+    }
+
+    // Fonction pour basculer l'état de chargement
+    function toggleLoading(loading) {
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const spinner = submitBtn.querySelector('.loading-spinner');
+        
+        if (loading) {
+            submitBtn.disabled = true;
+            btnText.style.opacity = '0';
+            spinner.style.display = 'block';
+        } else {
+            submitBtn.disabled = false;
+            btnText.style.opacity = '1';
+            spinner.style.display = 'none';
+        }
+    }
+
+    // Validation en temps réel
+    document.getElementById('age').addEventListener('input', function() {
+        const age = parseInt(this.value);
+        if (age < 1 || age > 120) {
+            this.setCustomValidity('L\'âge doit être entre 1 et 120 ans');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    document.getElementById('bmi').addEventListener('input', function() {
+        const bmi = parseFloat(this.value);
+        if (bmi < 10 || bmi > 50) {
+            this.setCustomValidity('L\'IMC doit être entre 10 et 50');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+
+    // Validation des dates en temps réel
+    document.getElementById('diagnosis_date').addEventListener('change', validateDates);
+    document.getElementById('end_treatment_date').addEventListener('change', validateDates);
+
+    // Soumettre le formulaire
     document.getElementById('prediction-form').addEventListener('submit', function(e) {
         e.preventDefault();
+
+        if (!validateDates()) {
+            return;
+        }
+
+        toggleLoading(true);
 
         // Récupérer les données du formulaire
         const formData = new FormData(e.target);
@@ -120,15 +539,65 @@
             },
             body: JSON.stringify(data)
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(result => {
             // Afficher la prédiction
-            document.getElementById('prediction-result').textContent = `Prédiction : ${result.prediction}`;
+            const resultContainer = document.getElementById('result-container');
+            const predictionResult = document.getElementById('prediction-result');
+            
+            // Déterminer l'emoji et le style selon le résultat
+            let emoji = '';
+            let resultText = '';
+            
+            if (result.prediction) {
+                const prediction = result.prediction.toString().toLowerCase();
+                if (prediction.includes('positif') || prediction.includes('positive') || prediction.includes('oui')) {
+                    emoji = '⚠️';
+                    resultText = `${emoji} Résultat: ${result.prediction}`;
+                } else if (prediction.includes('négatif') || prediction.includes('negative') || prediction.includes('non')) {
+                    emoji = '✅';
+                    resultText = `${emoji} Résultat: ${result.prediction}`;
+                } else {
+                    emoji = '📊';
+                    resultText = `${emoji} Résultat: ${result.prediction}`;
+                }
+            } else {
+                emoji = '❓';
+                resultText = `${emoji} Résultat indéterminé`;
+            }
+            
+            predictionResult.textContent = resultText;
+            resultContainer.classList.add('show');
+            
+            // Scroll vers le résultat
+            resultContainer.scrollIntoView({ behavior: 'smooth' });
         })
         .catch(error => {
             console.error('Erreur:', error);
-            document.getElementById('prediction-result').textContent = "Erreur lors de la prédiction.";
+            showError(`Erreur lors de la prédiction: ${error.message}`);
+        })
+        .finally(() => {
+            toggleLoading(false);
         });
+    });
+
+    // Animation d'entrée progressive des éléments
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animationPlayState = 'running';
+            }
+        });
+    });
+
+    document.querySelectorAll('.form-group').forEach(group => {
+        group.style.animationPlayState = 'paused';
+        observer.observe(group);
     });
 </script>
 

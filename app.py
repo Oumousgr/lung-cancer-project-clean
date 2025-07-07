@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 import pandas as pd
 import os
 import kagglehub
@@ -9,14 +10,12 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report
 import joblib
 from datetime import datetime
-import mlflow
-import mlflow.sklearn
-
-
+from xgboost import XGBClassifier
+from imblearn.over_sampling import RandomOverSampler
 
 app = Flask(__name__)
+CORS(app)  # Ajout de CORS pour permettre les requêtes depuis votre frontend
 
-# Télécharge les données de Kaggle
 def download_data():
     path = kagglehub.dataset_download("khwaishsaxena/lung-cancer-dataset")
     return path
@@ -24,7 +23,7 @@ def download_data():
 # Charger et préparer les données
 def load_and_prepare_data():
     # Chemin relatif vers LungCancer.csv dans le même dossier que app.py
-    dataset_path = os.path.join(os.getcwd(), 'LungCancer.csv')
+    dataset_path = os.path.join(os.getcwd(), 'data', 'LungCancer.csv')
     
     # Vérifie si le fichier existe à ce chemin
     if not os.path.exists(dataset_path):
@@ -69,28 +68,23 @@ def load_and_prepare_data():
 
     return X_train, X_test, y_train, y_test, X_test, y_test, scaler, X.columns.tolist()  # Retourne aussi les noms de colonnes
 
-# Entraîner le modèle
+# Entraîner le modèle (version corrigée sans duplication)
 def train_model(X_train, y_train):
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
+    # Oversampling des classes minoritaires
+    ros = RandomOverSampler(random_state=42)
+    X_train_res, y_train_res = ros.fit_resample(X_train, y_train)
 
-    with mlflow.start_run():
-        mlflow.sklearn.log_model(model, "model")
-        mlflow.log_params({"n_estimators": 100, "random_state": 42})
+    # Créer et entraîner le modèle XGBoost
+    model = XGBClassifier(
+        n_estimators=100,
+        max_depth=5,
+        learning_rate=0.1,
+        use_label_encoder=False,
+        eval_metric='logloss'
+    )
+    model.fit(X_train_res, y_train_res)
 
     return model
-
-def train_model(X_train, y_train):
-    model = RandomForestClassifier(n_estimators=100, random_state=42)
-    model.fit(X_train, y_train)
-
-    # Enregistrer le modèle dans MLFlow
-    with mlflow.start_run():
-        mlflow.sklearn.log_model(model, "model")  # Enregistrer le modèle
-        mlflow.log_params({"n_estimators": 100, "random_state": 42})  # Enregistrer des hyperparamètres
-        # Ajouter d'autres métadonnées si nécessaire
-    return model
-
 
 # Sauvegarder le modèle pour un usage futur
 def save_model(model, scaler, column_names):
@@ -157,6 +151,19 @@ def predict():
         if 'id' in input_df.columns:
             input_df = input_df.drop('id', axis=1)
 
+        # Convertir les colonnes de dates avant l'encodage
+        reference_date = datetime(2000, 1, 1)  # Date de référence
+        
+        # Convertir la colonne 'diagnosis_date' en nombre de jours depuis une date de référence
+        if 'diagnosis_date' in input_df.columns:
+            input_df['diagnosis_date'] = pd.to_datetime(input_df['diagnosis_date'], errors='coerce')
+            input_df['diagnosis_date'] = (input_df['diagnosis_date'] - reference_date).dt.days
+
+        # Convertir la colonne 'end_treatment_date' en nombre de jours depuis la même date de référence
+        if 'end_treatment_date' in input_df.columns:
+            input_df['end_treatment_date'] = pd.to_datetime(input_df['end_treatment_date'], errors='coerce')
+            input_df['end_treatment_date'] = (input_df['end_treatment_date'] - reference_date).dt.days
+
         # Appliquer le même encodage sur les colonnes catégorielles
         categorical_columns = ['gender', 'smoking_status', 'family_history', 'hypertension', 'asthma', 
                                'cirrhosis', 'other_cancer', 'treatment_type', 'country', 'cancer_stage']
@@ -170,27 +177,27 @@ def predict():
             input_df[col] = 0  # Ajouter les colonnes manquantes avec 0
         input_df = input_df[column_names]  # Réorganiser les colonnes pour correspondre à l'ordre d'entraînement
 
-        # Convertir la colonne 'diagnosis_date' en nombre de jours depuis une date de référence
-        input_df['diagnosis_date'] = pd.to_datetime(input_df['diagnosis_date'], errors='coerce')  # Convertir en datetime
-        reference_date = datetime(2000, 1, 1)  # Date de référence
-        input_df['diagnosis_date'] = (input_df['diagnosis_date'] - reference_date).dt.days  # Convertir en jours
-
-        # Convertir la colonne 'end_treatment_date' en nombre de jours depuis la même date de référence
-        input_df['end_treatment_date'] = pd.to_datetime(input_df['end_treatment_date'], errors='coerce')  # Convertir en datetime
-        input_df['end_treatment_date'] = (input_df['end_treatment_date'] - reference_date).dt.days  # Convertir en jours
-
         # Assurer que les mêmes étapes de prétraitement sont appliquées (normalisation)
         input_scaled = scaler.transform(input_df)  # Utilise le scaler chargé
 
         # Faire la prédiction
         prediction = model.predict(input_scaled)
+        probability = model.predict_proba(input_scaled)
 
-        return jsonify({"prediction": prediction.tolist()})
+        # Convertir la prédiction en texte lisible
+        prediction_text = "Positif" if prediction[0] == 1 else "Négatif"
+        confidence = float(probability[0].max())
+
+        return jsonify({
+            "prediction": prediction_text,
+            "confidence": confidence,
+            "probability": probability[0].tolist()
+        })
 
     except Exception as e:
         # En cas d'erreur, retourner l'erreur dans la réponse
+        print(f"Erreur dans predict: {str(e)}")  # Log pour debug
         return jsonify({"error": str(e)}), 500
 
-
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='127.0.0.1', port=5001, debug=True)
